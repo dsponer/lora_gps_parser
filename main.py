@@ -39,6 +39,14 @@ def load_map(mp):
         sys.exit(2)
     return map_file
 
+def parse_coordinate(center, size_im, coordinate):
+    h, w = size_im[:2]
+    center_x, center_y = center
+    x, y = coordinate
+
+    return int(y * (w // 2) / center_y), int(x * (h // 2) / center_x)
+
+
 
 def main():
     # Инициализируем pygame
@@ -55,9 +63,15 @@ def main():
         # Создаем файл
         map_file = load_map(mp)
         im = cv2.imread(map_file)
-        shape_im = im.shape
+        size_im = im.shape
 
-        cv2.circle(im, (shape_im[1] // 2, shape_im[0] // 2), 1, (0, 0, 255), -1)
+        coordinate = 42, 131.892108
+        coordinate = parse_coordinate((43.029910, 131.892108), size_im, coordinate)
+
+        cv2.circle(im, (size_im[1] // 2, size_im[0] // 2), 1, (0, 0, 255), -1)
+        cv2.circle(im, coordinate, 3, (0, 255, 0), -1)
+
+
         # Рисуем картинку, загружаемую из только что созданного файла.
         cv2.imshow('test', im)
         #
