@@ -1,4 +1,4 @@
-import cv2, requests, sys, os
+import cv2, requests, sys, os, serial
 
 
 # Создайте оконное приложение, отображающее карту по координатам и в масштабе, который задаётся программно.
@@ -7,7 +7,7 @@ class MapParams:
     def __init__(self):
         self.lat = 43.029910  # Координаты центра карты на старте. Задал координаты университета
         self.lon = 131.892108
-        self.zoom = 15 # Масштаб карты на старте. Изменяется от 1 до 19
+        self.zoom = 15  # Масштаб карты на старте. Изменяется от 1 до 19
         self.type = "map"  # Другие значения "sat", "sat,skl"
 
     # Преобразование координат в параметр ll, требуется без пробелов, через запятую и без скобок
@@ -44,7 +44,13 @@ def main():
     # Инициализируем pygame
     cv2.namedWindow('test')
     mp = MapParams()
+    ser = serial.Serial(port="COM30", baudrate="9600")
     while True:
+        while ser.inWaiting() > 0:
+            line = ser.readline()
+            if line:
+                data = line.decode().strip()
+                print(data)
 
         # Создаем файл
         map_file = load_map(mp)
@@ -66,5 +72,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
