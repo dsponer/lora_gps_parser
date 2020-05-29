@@ -7,8 +7,8 @@ import mercantile
 
 class MapParams:
     def __init__(self):
-        self.lat = 43.0286  # Координаты центра карты на старте. Задал координаты университета
-        self.lon = 131.8929
+        self.lat = 43.03350  # Координаты центра карты на старте. Задал координаты университета
+        self.lon = 131.88928
 
         self.west = 131.8797
         self.south = 43.0227
@@ -77,36 +77,44 @@ class MapParams:
         scale = 6324
         h, w = size_im[:2]
         y, x = coordinate
-        x, y = mercantile.xy(y, x)
+        # 131.9022528224, 43.0294958224
+        x, y = mercantile.xy(x, y)
+
         # рассчитываем координаты углов в веб-меркаторе
-        leftTop = mercantile.xy(self.bounds['west'], self.bounds['north'])
-        rightBottom = mercantile.xy(self.bounds['east'], self.bounds['south'])
+        left_top = mercantile.xy(self.bounds['west'], self.bounds['north'])
+        right_bottom = mercantile.xy(self.bounds['east'], self.bounds['south'])
 
         # расчитываем коэффициенты
-        kx = h / (rightBottom[0] - leftTop[0])
-        ky = w / (rightBottom[1] - leftTop[1])
+        kx = w / (right_bottom[0] - left_top[0])
+        ky = h / (right_bottom[1] - left_top[1])
 
-        x = (x - leftTop[0]) * kx * 1.24
-        y = (y - leftTop[1]) * ky * 0.76
+        x = (x - left_top[0]) * kx
+        y = (y - left_top[1]) * ky
 
-        print(x, y)
         return int(abs(x)), int(abs(y))
 
     def map_coordinate(self, value, in_min, in_max, out_min, out_max):
         return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
     def convert2float(self, value_str):
-        value_str = value_str[2].split(';')
-
-
+        count = 0
+        for i in value_str:
+            if i.isdigit():
+                count += 1
+        if count == len(value_str) - 1:
+            return float(value_str)
+        else:
+            return 0
 
 
 def main():
     # Инициализируем pygame
     cv2.namedWindow('test')
+    data_save = open('data.txt', 'w')
     mp = MapParams()
     # Создаем файл
-    ser = serial.Serial(port="/dev/cu.usbserial-14310", baudrate="9600")
+    ser = serial.Serial(port="/dev/cu.usbserial-14410", baudrate="9600")
+    lon, lat = 0, 0
     while True:
         data = str()
         while ser.inWaiting() > 0:
@@ -119,22 +127,26 @@ def main():
 
         coordinate = lon, lat
 
+        data_save.writelines(str(coordinate[0]) + ' ' + str(coordinate[1]) + '\n')
+
         im = cv2.imread('map.png')
         size_im = im.shape
 
         coordinate = mp.parse_coordinate(size_im, coordinate)
 
-        cv2.circle(im, (size_im[1] // 2, size_im[0] // 2), 3, (0, 0, 255), -1)
+        cv2.circle(im, mp.parse_coordinate(size_im, (43.03335, 131.88928)), 3, (0, 0, 255), -1)
         cv2.circle(im, coordinate, 3, (255, 0, 0), -1)
 
         # Рисуем картинку, загружаемую из только что созданного файла.
         cv2.imshow('test', im)
-        #
-        # mp.change_coordinate(0.1, 0.1)
+
         if cv2.waitKey(1) == 27:
+            cv2.imwrite('img_res.png', im)
             break
 
     cv2.destroyAllWindows()
+    data_save.close()
+
     # Удаляем файл с изображением.
     # os.remove(map_file)
 
