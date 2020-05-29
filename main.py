@@ -88,8 +88,8 @@ class MapParams:
         kx = w / (right_bottom[0] - left_top[0])
         ky = h / (right_bottom[1] - left_top[1])
 
-        x = (x - left_top[0]) * kx
-        y = (y - left_top[1]) * ky
+        x = (x - left_top[0]) * kx #* 1.198
+        y = (y - left_top[1]) * ky #* 0.915
 
         return int(abs(x)), int(abs(y))
 
@@ -110,38 +110,44 @@ class MapParams:
 def main():
     # Инициализируем pygame
     cv2.namedWindow('test')
-    data_save = open('data.txt', 'w')
+    data_save = open('data_1.txt', 'w')
+    im = cv2.imread('map.png')
     mp = MapParams()
     # Создаем файл
-    ser = serial.Serial(port="/dev/cu.usbserial-14410", baudrate="9600")
+    ser = serial.Serial(port="/dev/cu.usbserial-14110", baudrate="9600")
     lon, lat = 0, 0
+    size_im = im.shape
+    res_points = []
     while True:
         data = str()
-        while ser.inWaiting() > 0:
-            line = ser.readline()
-            if line:
-                data = line.decode().strip().split()
-        if len(data) == 3:
-            data = data[2].split(';')
-            lon, lat = mp.convert2float(data[0]), mp.convert2float(data[1])
+        try:
+            while ser.inWaiting() > 0:
+                line = ser.readline()
+                if line:
+                    data = line.decode().strip().split()
+                if len(data) == 3:
+                    data = data[2].split(';')
+                    lon, lat = mp.convert2float(data[0]), mp.convert2float(data[1])
+        except UnicodeDecodeError:
+            continue
 
-        coordinate = lon, lat
+        if lon != 0 and lat != 0:
 
-        data_save.writelines(str(coordinate[0]) + ' ' + str(coordinate[1]) + '\n')
-
-        im = cv2.imread('map.png')
-        size_im = im.shape
-
-        coordinate = mp.parse_coordinate(size_im, coordinate)
-
-        cv2.circle(im, mp.parse_coordinate(size_im, (43.03335, 131.88928)), 3, (0, 0, 255), -1)
-        cv2.circle(im, coordinate, 3, (255, 0, 0), -1)
+            coordinate = lon, lat
+            data_save.writelines(str(coordinate[0]) + ' ' + str(coordinate[1]) + '\n')
+            coordinate = mp.parse_coordinate(size_im, coordinate)
+            cv2.circle(im, coordinate, 3, (255, 0, 0), -1)
+            res_points.append(coordinate)
+            for index, item in enumerate(res_points):
+                if index == len(res_points) - 1:
+                    break
+                cv2.line(im, item, res_points[index + 1], [0, 255, 0], 2)
 
         # Рисуем картинку, загружаемую из только что созданного файла.
         cv2.imshow('test', im)
 
         if cv2.waitKey(1) == 27:
-            cv2.imwrite('img_res.png', im)
+            cv2.imwrite('img_res_1.png', im)
             break
 
     cv2.destroyAllWindows()
